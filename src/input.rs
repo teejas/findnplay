@@ -1,11 +1,9 @@
 use std::{
   error::Error,
-  io::{self, BufRead},
   path::PathBuf,
   slice::Iter,
-  sync::mpsc::{self, TryRecvError},
-  thread,
-  time::Duration
+  sync::mpsc::{self},
+  thread
 };
 use crossterm::{cursor, event, execute, terminal};
 

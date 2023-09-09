@@ -1,12 +1,11 @@
-use rodio::{Decoder, OutputStream, Sink};
-use rodio::source::{SineWave, Source};
+use rodio::{Decoder, OutputStream};
+use rodio::source::{Source};
 use std::{
   error::Error,
   fs,
-  io::{self, BufRead, BufReader},
+  io::{BufReader},
   path::PathBuf,
-  slice::Iter,
-  sync::mpsc::{self, TryRecvError, Receiver},
+  sync::mpsc::{TryRecvError, Receiver},
   thread,
   time::Duration
 };
