@@ -1,13 +1,13 @@
 use std::{
   error::Error,
-  io::BufReader,
-  fs,
+  io::{self, BufRead},
   path::PathBuf,
-  slice::Iter
+  slice::Iter,
+  sync::mpsc::{self, TryRecvError},
+  thread,
+  time::Duration
 };
-use clap::Parser;
 use crossterm::{cursor, event, execute, terminal};
-use rodio::{Decoder, OutputStream, source::Source};
 
 use crate::play::play_audio;
 
@@ -28,27 +28,33 @@ impl Drop for CleanUp {
 }
 
 fn read_key() -> Result<event::KeyEvent, Box<dyn Error>> {
-  loop {
-      if event::poll(std::time::Duration::from_millis(5000))? {
-          if let event::Event::Key(event) = event::read()? {
-              return Ok(event);
-          }
-      }
-  }
+	loop {
+		if event::poll(std::time::Duration::from_millis(5000))? {
+			if let event::Event::Key(event) = event::read()? {
+				return Ok(event);
+			}
+		}
+	}
 }
 
 pub fn capture_user_input(mut iter: Iter<PathBuf>) -> Result<(), Box<dyn Error>> {
-  match read_key()? {
-      event::KeyEvent {
-          code: event::KeyCode::Char('n'),
-          ..
-      } => {
-          let _ = play_audio(iter.next().unwrap());
-          return capture_user_input(iter);
-      },
-      _ => {
-          return Ok(());
-      }
-  }
-  Ok(())
+  let first_af = iter.next().unwrap().clone();
+  let (tx, rx) = mpsc::channel();
+  thread::spawn(move || {
+    println!("Working...");
+    let _ = play_audio(&first_af, rx);
+  });
+	match read_key()? {
+		event::KeyEvent {
+			code: event::KeyCode::Char('n'),
+			..
+		} => {
+      let _ = tx.send(());
+			return capture_user_input(iter);
+		},
+		_ => {
+			return Ok(());
+		}
+	}
+	Ok(())
 }

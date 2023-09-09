@@ -1,22 +1,36 @@
+use rodio::{Decoder, OutputStream, Sink};
+use rodio::source::{SineWave, Source};
 use std::{
   error::Error,
-  io::BufReader,
   fs,
+  io::{self, BufRead, BufReader},
   path::PathBuf,
-  slice::Iter
+  slice::Iter,
+  sync::mpsc::{self, TryRecvError, Receiver},
+  thread,
+  time::Duration
 };
-use clap::Parser;
-use crossterm::{cursor, event, execute, terminal};
-use rodio::{Decoder, OutputStream, source::Source};
 
-pub fn play_audio(af: &PathBuf) -> Result<(), Box<dyn Error>> {
+pub fn play_audio<T>(af: &PathBuf, rx: Receiver<T>) -> Result<(), Box<dyn Error>> {
   // Get a output stream handle to the default physical sound device
-  let (_stream, stream_handle) = OutputStream::try_default()?;
-  // Load a sound from a file, using a path relative to Cargo.toml
+  let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+  // let sink = Sink::try_new(&stream_handle).unwrap();
   let file = BufReader::new(fs::File::open(af)?);
   // Decode that sound file into a source
   let source = Decoder::new(file)?;
-  // Play the sound directly on the device
   stream_handle.play_raw(source.convert_samples());
+
+  // The sound plays in a separate audio thread,
+  // so we need to keep the main thread alive while it's playing.
+  loop {
+    thread::sleep(Duration::from_millis(250));
+    match rx.try_recv() {
+      Ok(_) | Err(TryRecvError::Disconnected) => {
+        println!("Terminating.");
+        break;
+      }
+      Err(TryRecvError::Empty) => {}
+    }
+  }
   Ok(())
 }
