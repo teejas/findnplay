@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
   if !audiofiles.is_empty() {
     let af_iter = audiofiles.iter();
     let mut ctrlr = UserControl::new(af_iter);
-    let _ = ctrlr.capture_user_input()?;
+    ctrlr.capture_user_input()?;
   } else {
     println!("No audio files found in the directory {}", dir.display());
   }

@@ -17,7 +17,7 @@ pub fn play_audio<T>(af: &PathBuf, rx: Receiver<T>) -> Result<(), Box<dyn Error>
   let file = BufReader::new(fs::File::open(af)?);
   // Decode that sound file into a source
   let source = Decoder::new(file)?;
-  stream_handle.play_raw(source.convert_samples());
+  let _ = stream_handle.play_raw(source.convert_samples());
 
   // The sound plays in a separate audio thread,
   // so we need to keep the main thread alive while it's playing.

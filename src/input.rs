@@ -29,7 +29,7 @@ impl Drop for UserControl<'_> {
 
 impl UserControl<'_> {
   pub fn new(iter: Iter<PathBuf>) -> UserControl {
-    terminal::enable_raw_mode();
+    let _ = terminal::enable_raw_mode();
     UserControl {
       iter
     }
@@ -61,9 +61,8 @@ impl UserControl<'_> {
         return self.capture_user_input();
       },
       _ => {
-        return Ok(());
+        Ok(())
       }
     }
-    Ok(())
   }
 }
