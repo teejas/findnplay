@@ -1,64 +1,33 @@
 use std::{
     error::Error,
+    io::BufReader,
     fs,
-    path::PathBuf
+    path::PathBuf,
+    slice::Iter
 };
 use clap::Parser;
+use crossterm::{cursor, event, execute, terminal};
+use rodio::{Decoder, OutputStream, source::Source};
 
-#[derive(Debug, Parser)]
-struct Cli {
-    /// The path to the directory to search for audio files in.
-    #[arg(short, long)]
-    dir: PathBuf,
-}
-
-fn parse_args(args: Cli) -> PathBuf {
-    args.dir
-}
-
-// searches directory and returns a vector of audio pathbufs
-fn search_directory(dir: PathBuf) -> Result<Vec<PathBuf>, Box<dyn Error>> { 
-    let mut ret: Vec<PathBuf> = Vec::new();
-    for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-        let path = entry.path();
-        let metadata = fs::metadata(&path)?;
-        if metadata.is_file() {
-            if let Some(ext) = path.extension() {
-                println!("{:?}", ext);
-                if ext == "wav" || ext == "mp3" {
-                    ret.push(path);
-                }
-            }
-        }
-    }
-    Ok(ret)
-}
+mod find;
+mod input;
+mod play;
+use crate::play::play_audio;
+use crate::input::{capture_user_input, CleanUp};
+use crate::find::{Cli, parse_args, search_directory};
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let _clean_up = CleanUp;
+
     let dir = parse_args(Cli::parse());
     let audiofiles: Vec<PathBuf> = search_directory(dir)?;
     println!("{:?}", audiofiles);
-    Ok(())
-}
 
-mod tests {
-    use super::*;
-    #[test]
-    fn search_dir_with_no_audio_files() {
-        let ret = search_directory(PathBuf::from(".")).unwrap();
-        let check: Vec<PathBuf> = Vec::new();
-        assert_eq!(ret, check);
-    }
-    #[test]
-    fn search_dir_with_one_audio_file() {
-        let mut ret = search_directory(PathBuf::from("examples/")).unwrap();
-        ret.sort();
-        assert_eq!(ret, 
-            vec![
-                PathBuf::from("examples/mypianothingilike.mp3"), 
-                PathBuf::from("examples/shorter_cc_hornlinez.wav")
-            ]
-        );
-    }
+    let mut af_iter = audiofiles.iter();
+    let _ = play_audio(af_iter.next().unwrap());
+
+    terminal::enable_raw_mode()?;
+    let _ = capture_user_input(af_iter);
+
+    Ok(())
 }
