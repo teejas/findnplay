@@ -1,4 +1,4 @@
-name: clippy-fix
+name: run-tests-and-fmt
 
 on:
   push:
