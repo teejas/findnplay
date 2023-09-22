@@ -2,20 +2,33 @@ package main
 
 import (
 	"fmt"
-	"io/fs"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/urfave/cli/v2"
 )
 
-func fetchSongs(dir string) ([]fs.DirEntry, error) {
-	entries, err := os.ReadDir(dir)
+func fetchSongs(dir string) ([]string, error) {
+	// entries, err := os.ReadDir(dir)
+	fmt.Println(dir)
+	entries := []string{}
+	err := filepath.Walk(dir,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			fmt.Println(path, info.Size())
+			if path != dir {
+				entries = append(entries, path[len(dir)+1:])
+			}
+			return nil
+		})
 	if err != nil {
 		log.Fatal(err)
-		return entries, err
+		return []string{}, err
 	}
 	return entries, nil
 }
@@ -26,20 +39,32 @@ func startServer(c *cli.Context) error {
 	if err != nil {
 		log.Fatal("Failed to fetch songs")
 		return err
+	} else if len(songs) == 0 {
+		fmt.Println("No songs found in specified directory")
+		return nil
 	}
 	fmt.Println("Starting HTTP server...")
 	r := gin.Default()
+	r.LoadHTMLGlob("web/*.html")
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
 	})
 	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", nil)
+	})
+	r.GET("/songs", func(c *gin.Context) {
+		// song_names := []string{}
+		// for _, s := range songs {
+		// 	song_names = append(song_names, s.Name())
+		// }
 		c.JSON(http.StatusOK, gin.H{
-			"message": songs[0].Name(),
+			"message": songs,
 		})
 	})
-	r.Run()
+	r.StaticFS("/song", http.Dir(c.String("dir")))
+	r.Run(":8080")
 	return nil
 }
 

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>findnplay</title>
+</head>
+
+<style>
+  body {background-color: powderblue;}
+  .app {
+    color: blue;
+    position: absolute;
+    left: 30%;
+    top: 20%;
+  }
+  button {
+    height: 18px;
+    width: 10px;
+  }
+</style>
+
+<body>
+  <script>
+    const url = 'http://localhost:8080/songs'
+    async function fetchSongs() {
+      const post = await fetch(url).then((res) => res.json());
+      var songs = post.message;
+      console.log(songs);
+      for (i in songs) {
+        console.log(songs[i]);
+        var node = document.createElement('li');
+        node.appendChild(document.createTextNode(songs[i]));
+        const button = document.createElement('button');
+        button.style.backgroundColor = 'white';
+        const audio = new Audio("http://localhost:8080/song/".concat(songs[i]));
+        button.addEventListener("click", () => {
+          if(audio.paused) {
+            audio.play();
+            button.style.backgroundColor = 'green';
+          } else {
+            audio.pause();
+            button.style.backgroundColor = 'white';
+          }
+        });
+        node.appendChild(button);
+        document.querySelector('ul').appendChild(node);
+      }
+    }
+    fetchSongs();
+  </script>
+
+  <div class="app">
+    <h2>Play a song:</h2>
+    <ul></ul>
+  </div>
+</body>
+
+</html>
